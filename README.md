@@ -29,5 +29,5 @@ Press:
   ESC: save and quit
 ========================================
 ```
-
+It will then automatically switch to the next image. I've designed the code such that it saves your progress if you don't wanna do it in one sitting. 
 8. Once you're done, send your CSV to teodor.yankov@new.ox.ac.uk. Thanks!! 
