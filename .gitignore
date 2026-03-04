@@ -6,3 +6,5 @@ sharktrack-1.5/
 *.log
 *.csv
 *.png
+CLIP/
+IEarth_CDT_shark_detection/
