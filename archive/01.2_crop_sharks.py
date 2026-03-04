@@ -1,9 +1,7 @@
+## Code to retry failed shark crops from 01_crop_sharks.py
+## Input: Original CSV and existing cropped images
+## Output: Previously failed crops in a new folder
 
-## code for preprocessing BRUVS videos using SharkTrack
-## input: SharkTrack output 
-## output: a folder of cropped images of shark stills from the videos, and a .csv file with the corresponding metadata (filename, date, time, location, etc.)
-
-## libraries
 import pandas as pd
 import cv2
 import os
@@ -11,22 +9,24 @@ from pathlib import Path
 from tqdm import tqdm
 
 ## set paths
-CSV_PATH = "/gws/nopw/j04/iecdt/tyankov/iecdt-shark-id/sharktrack_results/internal_results/output.csv"
-VIDEO_DIR = "/gws/nopw/j04/iecdt/shark_bruvs"
-OUTPUT_DIR = "/gws/nopw/j04/iecdt/tyankov/iecdt-shark-id/cropped_sharks"
+CSV_PATH = "./sharktrack_results/internal_results/output.csv"
+VIDEO_DIR = "/gws/nopw/j04/iecdt/shark_bruvs" # update with where your videos are stored
+EXISTING_METADATA = "./cropped_sharks/cropped_metadata.csv"
+OUTPUT_DIR = "./cropped_sharks2"
 
-# setting higher read attempts for complex video formats
-os.environ['OPENCV_FFMPEG_READ_ATTEMPTS'] = '10000'
+# Increase read attempts even more for problematic videos
+os.environ['OPENCV_FFMPEG_READ_ATTEMPTS'] = '50000'
 
-## test mode
-TEST_ROWS = None
-
-## function
 def crop_shark_from_video(video_path, frame_num, xmin, ymin, xmax, ymax):
     """
     Extract a specific frame from video and crop to bounding box
     """
     cap = cv2.VideoCapture(video_path)
+    
+    # try setting backend explicitly for problematic videos
+    if not cap.isOpened():
+        cap = cv2.VideoCapture(video_path, cv2.CAP_FFMPEG)
+    
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
     ret, frame = cap.read()
     cap.release()
@@ -49,22 +49,45 @@ def crop_shark_from_video(video_path, frame_num, xmin, ymin, xmax, ymax):
     return cropped
 
 def main():
-    # creating output dir
+    # creating output directory
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     
-    # reading CSV
-    print("Loading SharkTrack results...")
-    df = pd.read_csv(CSV_PATH)
-    if TEST_ROWS is not None:
-        print(f"🧪 TEST MODE: Processing only first {TEST_ROWS} rows")
-        df = df.head(TEST_ROWS)
+    # loading original CSV with all detections
+    print("Loading original SharkTrack results...")
+    df_original = pd.read_csv(CSV_PATH)
     
-    print(f"Found {len(df)} detections across {df['track_id'].nunique()} unique tracks")
+    # loading existing successful crops
+    print("Loading existing crop metadata...")
+    df_existing = pd.read_csv(EXISTING_METADATA)
     
-    # processing each detection
+    # creating set of successfully cropped identifiers
+    existing_ids = set()
+    for _, row in df_existing.iterrows():
+        # extract identifying info from filename or use metadata columns
+        identifier = f"{row['video_name']}_{row['track_id']}_{row['frame']}"
+        existing_ids.add(identifier)
+    
+    print(f"Found {len(existing_ids)} existing successful crops")
+    print(f"Original detections: {len(df_original)}")
+    
+    # find failed crops
+    failed_crops = []
+    for idx, row in df_original.iterrows():
+        identifier = f"{row['video_name']}_{row['track_id']}_{row['frame']}"
+        if identifier not in existing_ids:
+            failed_crops.append(row)
+    
+    df_failed = pd.DataFrame(failed_crops)
+    print(f"Found {len(df_failed)} failed crops to retry")
+    
+    if len(df_failed) == 0:
+        print("No failed crops to retry!")
+        return
+    
+    # retry cropping failed detections
     cropped_images = []
     
-    for idx, row in tqdm(df.iterrows(), total=len(df), desc="Cropping sharks"):
+    for idx, row in tqdm(df_failed.iterrows(), total=len(df_failed), desc="Retrying failed crops"):
         video_name = row['video_name']
         video_path = os.path.join(VIDEO_DIR, video_name)
         
@@ -72,7 +95,7 @@ def main():
             print(f"Warning: Video not found: {video_path}")
             continue
         
-        # extracting and cropping
+        # Extract and crop
         cropped = crop_shark_from_video(
             video_path,
             frame_num=row['frame'],
@@ -83,10 +106,9 @@ def main():
         )
         
         if cropped is None or cropped.size == 0:
-            print(f"Warning: Failed to crop detection {idx}")
             continue
         
-        # saving
+        # Save with same naming convention
         output_filename = f"video_{video_name.split('.')[0]}_track_{row['track_id']}_frame_{row['frame']}.jpg"
         output_path = os.path.join(OUTPUT_DIR, output_filename)
         
@@ -106,7 +128,8 @@ def main():
     metadata_path = os.path.join(OUTPUT_DIR, "cropped_metadata.csv")
     cropped_df.to_csv(metadata_path, index=False)
     
-    print(f"\n✅ Cropped {len(cropped_images)} shark images")
+    print(f"\n✅ Successfully cropped {len(cropped_images)} previously failed images")
+    print(f"❌ Still failed: {len(df_failed) - len(cropped_images)}")
     print(f"📁 Saved to: {OUTPUT_DIR}")
     print(f"📄 Metadata: {metadata_path}")
 
