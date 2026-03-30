@@ -81,7 +81,7 @@ print(f"\nTotal combinations: {total_combinations}")
 print()
 
 # ============================================================================
-# DATASET CLASS
+# custom dataset class
 # ============================================================================
 
 class SharkDataset(Dataset):
@@ -139,8 +139,9 @@ val_transform = transforms.Compose([
 ])
 
 # ============================================================================
-# LOAD AND SPLIT DATA
+# loading and splitting data
 # ============================================================================
+
 print("=" * 80)
 print("Loading and Splitting Data")
 print("=" * 80)
@@ -156,8 +157,8 @@ train_idx, val_idx = train_test_split(
 )
 
 print(f"Total training data: {len(full_train_dataset)}")
-print(f"  Train split: {len(train_idx)} samples")
-print(f"  Val split:   {len(val_idx)} samples")
+print(f"Train split: {len(train_idx)} samples")
+print(f"Val split: {len(val_idx)} samples")
 print()
 
 train_dataset = SharkDataset(FINETUNE_CSV, BASE_DIR, EXTERNAL_BASE_DIR, 
@@ -170,8 +171,9 @@ print(f"Test dataset: {len(test_dataset)} samples")
 print()
 
 # ============================================================================
-# LOAD DINOV2 BACKBONE
+# loading dinoV2 backbone
 # ============================================================================
+
 print("=" * 80)
 print("Loading DINOv2 Backbone")
 print("=" * 80)
@@ -195,8 +197,9 @@ print(f"Embedding dimension: {embedding_dim}")
 print()
 
 # ============================================================================
-# LOAD PRETRAINED WEIGHTS
+# loading pretrained weights
 # ============================================================================
+
 print("=" * 80)
 print("Loading Pretrained Weights")
 print("=" * 80)
@@ -206,8 +209,9 @@ print(f"✅ Loaded pretrained weights from {PRETRAINED_MODEL}")
 print()
 
 # ============================================================================
-# LINEAR PROBE CLASS
+# custom class for linear probe
 # ============================================================================
+
 class LinearProbe(nn.Module):
     def __init__(self, input_dim, num_classes, hidden_dim=256, dropout=0.3):
         super(LinearProbe, self).__init__()
@@ -222,13 +226,13 @@ class LinearProbe(nn.Module):
         return self.classifier(x)
 
 # ============================================================================
-# TRAINING FUNCTION (WITH WARM START)
+# training function with warm start
 # ============================================================================
+
 def train_model(hyperparams, train_loader, val_loader, pretrained_weights, 
                 max_epochs=30, patience=7):
-    """Train model with warm start from pretrained weights"""
     
-    # Create model
+    # creating model
     model = LinearProbe(
         embedding_dim, 
         len(TARGET_CLASSES),
@@ -236,9 +240,9 @@ def train_model(hyperparams, train_loader, val_loader, pretrained_weights,
         dropout=hyperparams['dropout']
     ).to(DEVICE)
     
-    print("    → Training from scratch with well-tuned DINOv2 features")
+    print("→ Training from scratch with well-tuned DINOv2 features")
     
-    # Optimizer
+    # optimiser
     if hyperparams['optimizer'] == 'adam':
         optimizer = optim.Adam(
             model.parameters(), 
@@ -264,7 +268,7 @@ def train_model(hyperparams, train_loader, val_loader, pretrained_weights,
     history = {'train_loss': [], 'val_loss': [], 'val_acc': []}
     
     for epoch in range(max_epochs):
-        # Training
+        # training
         model.train()
         train_loss = 0.0
         
@@ -285,7 +289,7 @@ def train_model(hyperparams, train_loader, val_loader, pretrained_weights,
         
         train_loss /= len(train_loader)
         
-        # Validation
+        # val
         model.eval()
         val_loss = 0.0
         correct = 0
@@ -313,7 +317,7 @@ def train_model(hyperparams, train_loader, val_loader, pretrained_weights,
         
         scheduler.step(val_loss)
         
-        # Track best model
+        # tracking best model
         if val_acc > best_val_acc:
             best_val_loss = val_loss
             best_val_acc = val_acc
@@ -325,7 +329,7 @@ def train_model(hyperparams, train_loader, val_loader, pretrained_weights,
         if epochs_no_improve >= patience:
             break
     
-    # Load best model state
+    # loading best model state
     model.load_state_dict(best_model_state)
     
     return {
@@ -338,8 +342,9 @@ def train_model(hyperparams, train_loader, val_loader, pretrained_weights,
 
 
 # ============================================================================
-# GRID SEARCH
+# grid search
 # ============================================================================
+
 print("=" * 80)
 print("Running Grid Search (Warm Start)")
 print("=" * 80)
@@ -375,14 +380,14 @@ for i, combination in enumerate(all_combinations):
         num_workers=4
     )
     
-    # Train model (with warm start)
+    # training model (with warm start)
     result = train_model(hyperparams, train_loader, val_loader, pretrained_state_dict)
     
-    print(f"  → Val Accuracy: {result['best_val_acc']:.4f} ({result['best_val_acc']*100:.2f}%)")
-    print(f"  → Val Loss: {result['best_val_loss']:.4f}")
-    print(f"  → Epochs: {result['epochs_trained']}")
+    print(f"→ Val Accuracy: {result['best_val_acc']:.4f} ({result['best_val_acc']*100:.2f}%)")
+    print(f"→ Val Loss: {result['best_val_loss']:.4f}")
+    print(f"→ Epochs: {result['epochs_trained']}")
     
-    # Store results
+    # storing results
     results.append({
         **hyperparams,
         'val_accuracy': result['best_val_acc'],
@@ -390,7 +395,7 @@ for i, combination in enumerate(all_combinations):
         'epochs_trained': result['epochs_trained']
     })
     
-    # Track best
+    # tracking best
     if result['best_val_acc'] > best_overall_acc:
         best_overall_acc = result['best_val_acc']
         best_hyperparams = hyperparams
@@ -403,7 +408,7 @@ print("Grid Search Complete!")
 print("=" * 80)
 print()
 
-# Save all results
+# saving all results
 results_df = pd.DataFrame(results)
 results_df = results_df.sort_values('val_accuracy', ascending=False)
 results_df.to_csv(os.path.join(OUTPUT_DIR, 'gridsearch_results.csv'), index=False)
@@ -418,19 +423,19 @@ for param, value in best_hyperparams.items():
 print(f"  Validation Accuracy: {best_overall_acc:.4f} ({best_overall_acc*100:.2f}%)")
 print()
 
-# Save best hyperparameters
+# saving best hyperparameters
 with open(os.path.join(OUTPUT_DIR, 'best_hyperparameters.json'), 'w') as f:
     json.dump({
         **best_hyperparams,
         'val_accuracy': float(best_overall_acc)
     }, f, indent=2)
 
-# Save best model
+# saving best model
 torch.save(best_model.state_dict(), os.path.join(OUTPUT_DIR, 'best_model.pth'))
 print(f"✅ Best model saved")
 print()
 
-# Visualize grid search results
+# visualising grid search results
 fig, axes = plt.subplots(2, 3, figsize=(18, 10))
 axes = axes.flatten()
 
@@ -453,8 +458,9 @@ print("✅ Saved gridsearch_visualization.png")
 print()
 
 # ============================================================================
-# EVALUATE BEST MODEL ON TEST SET
-# ============================================================================
+# evaluating best model on test set
+# ===========================================================================
+
 print("=" * 80)
 print("Evaluating Best Model on Test Set")
 print("=" * 80)
@@ -497,7 +503,7 @@ all_probs = np.array(all_probs)
 all_features = np.array(all_features)
 
 # ============================================================================
-# COMPUTE METRICS
+# computing metrics
 # ============================================================================
 print()
 print("=" * 80)
@@ -536,8 +542,8 @@ weighted_p, weighted_r, weighted_f1, _ = precision_recall_fscore_support(
 )
 
 print("Aggregate Metrics:")
-print(f"  Macro Avg    - Precision: {macro_p:.4f}, Recall: {macro_r:.4f}, F1: {macro_f1:.4f}")
-print(f"  Weighted Avg - Precision: {weighted_p:.4f}, Recall: {weighted_r:.4f}, F1: {weighted_f1:.4f}")
+print(f"Macro Avg - Precision: {macro_p:.4f}, Recall: {macro_r:.4f}, F1: {macro_f1:.4f}")
+print(f"Weighted Avg - Precision: {weighted_p:.4f}, Recall: {weighted_r:.4f}, F1: {weighted_f1:.4f}")
 print()
 
 cm = confusion_matrix(all_labels, all_preds, labels=range(len(TARGET_CLASSES)))

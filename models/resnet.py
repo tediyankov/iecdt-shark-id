@@ -20,36 +20,37 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # ============================================================================
-# CONFIGURATION 
+# config 
 # ============================================================================
 RESNET_CKPT = "./IEarth_CDT_shark_detection/best.pth"
 LABEL_MAP = "./IEarth_CDT_shark_detection/label_map.json"
 
-# Your data
-TEST_LABELS_CSV = "./labels.csv"
+# our data
+TEST_LABELS_CSV = "./data/labels.csv"
 BASE_DIR = "."
 
-# Output
+# output
 OUTPUT_DIR = "./results/resnet"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # ============================================================================
-# CLASS MAPPING
+# class mapping
 # ============================================================================
-# Map your BRUVS labels to ResNet classes
+
+# mapping BRUVS labels to ResNet classes
 CLASS_MAPPING = {
     'whitetip_reef_shark': 'Whitetip_Shark',
     'blacktip_reef_shark': 'Blacktip_Shark',
     'tawny_nurse_shark': 'Nurse_Shark',
-    # grey_reef_shark has no match - will be excluded
+    # grey_reef_shark has no match - we exclude it
     # unclear/other - will be excluded (not a shark species)
 }
 
-# Classes that can be evaluated (have a mapping)
+# classes that can be evaluated (have a mapping)
 EVALUABLE_CLASSES = list(CLASS_MAPPING.keys())
 
 # ============================================================================
-# MODEL SETUP
+# setup of model
 # ============================================================================
 
 def get_model(arch, num_classes):
@@ -82,7 +83,7 @@ print("ResNet50 Evaluation on Balanced Test Set")
 print("=" * 80)
 print()
 
-# Load model
+# loading model
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")#
 print(f"Using device: {device}")
 if torch.cuda.is_available():
@@ -93,7 +94,7 @@ print("Loading model checkpoint...")
 ckpt = torch.load(RESNET_CKPT, map_location=device)
 class_names = ckpt.get("class_names")
 
-# Load from label map if available
+# loading from label map if available
 reject_threshold = 0.4
 if LABEL_MAP and os.path.exists(LABEL_MAP):
     with open(LABEL_MAP, 'r') as f:
@@ -112,8 +113,8 @@ print()
 print("Class Mapping:")
 for bruvs_class, resnet_class in CLASS_MAPPING.items():
     print(f"  {bruvs_class:25s} → {resnet_class}")
-print(f"  grey_reef_shark            → [EXCLUDED - no match]")
-print(f"  unclear/other              → [EXCLUDED - not a species]")
+print(f"grey_reef_shark → [EXCLUDED - no match]")
+print(f"unclear/other → [EXCLUDED - not a species]")
 print()
 
 arch = ckpt.get("arch", "resnet50")
@@ -125,17 +126,17 @@ model.eval()
 transform = build_transform(224)
 
 # ============================================================================
-# STEP 1: Load Test Set and Filter to Evaluable Classes
+# loading test set and filter to evaluate classes
 # ============================================================================
 print("=" * 80)
-print("STEP 1: Loading Test Set")
+print("STEP 1: loading test set")
 print("=" * 80)
 
 test_df = pd.read_csv(TEST_LABELS_CSV)
 print(f"Loaded {len(test_df)} total test images")
 print(f"Full test set distribution:\n{test_df['species'].value_counts()}\n")
 
-# Filter to only classes that can be mapped
+# filtering to only classes that can be mapped
 test_df_orig = test_df.copy()
 test_df = test_df[test_df['species'].isin(EVALUABLE_CLASSES)].copy()
 
@@ -144,8 +145,8 @@ excluded_grey = len(test_df_orig[test_df_orig['species'] == 'grey_reef_shark'])
 excluded_unclear = len(test_df_orig[test_df_orig['species'] == 'unclear/other'])
 
 print(f"Excluded {excluded_count} images:")
-print(f"  - grey_reef_shark: {excluded_grey} (no ResNet match)")
-print(f"  - unclear/other: {excluded_unclear} (not a species)")
+print(f"- grey_reef_shark: {excluded_grey} (no ResNet match)")
+print(f"- unclear/other: {excluded_unclear} (not a species)")
 print()
 print(f"Evaluating on {len(test_df)} images:")
 print(test_df['species'].value_counts())
@@ -156,10 +157,10 @@ if len(test_df) == 0:
     exit(1)
 
 # ============================================================================
-# STEP 2: Classify Images
+# classifying images
 # ============================================================================
 print("=" * 80)
-print("STEP 2: Running ResNet50 Classification")
+print("STEP 2: running ResNet50 classification")
 print("=" * 80)
 
 results = []
@@ -173,7 +174,7 @@ for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc="Classifying")
         failed += 1
         continue
     
-    # Load and classify
+    # loading and classifying
     try:
         img = Image.open(img_path).convert('RGB')
         x = transform(img).unsqueeze(0).to(device)
@@ -185,7 +186,7 @@ for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc="Classifying")
         top_idx = int(probs.argmax())
         top_prob = float(probs[top_idx])
         
-        # Apply reject threshold
+        # applying reject threshold
         if top_prob < reject_threshold:
             pred_species = "background"
         else:
@@ -203,54 +204,55 @@ for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc="Classifying")
         failed += 1
         continue
 
-print(f"\n✅ Classification complete!")
+print(f"\n✅ classification complete woohoo!")
 print(f"Successfully classified: {len(results)}")
 print(f"Failed: {failed}")
 print()
 
-# Save predictions
+# saving preds
 results_df = pd.DataFrame(results)
 results_df.to_csv(os.path.join(OUTPUT_DIR, 'predictions.csv'), index=False)
 
 # ============================================================================
-# STEP 3: Compute Metrics (Using Mapped Classes)
+# computing metrics using mapped classes
 # ============================================================================
 print("=" * 80)
-print("STEP 3: Computing Evaluation Metrics")
+print("STEP 3: computing eval metrics")
 print("=" * 80)
 
-# Use mapped true labels for comparison
+# using mapped true labels for comparison
 y_true = results_df['true_species_mapped'].values
 y_pred = results_df['pred_species'].values
 confidences = results_df['confidence'].values
 
-# Get unique mapped classes
+# getting unique mapped classes
 mapped_classes = sorted(CLASS_MAPPING.values())
 
-# Overall Accuracy (exact match)
+# overall accuracy (exact match)
 accuracy = accuracy_score(y_true, y_pred)
 print(f"Overall Accuracy: {accuracy:.4f} ({accuracy*100:.2f}%)")
 print()
 
-# Show prediction distribution
-print("Prediction Distribution:")
+# pred distribution
+print("Prediction distribution:")
 pred_counts = results_df['pred_species'].value_counts()
 print(pred_counts)
 print()
 
-# Check how many predictions match any of our target classes
+# checking how many predictions match any of our target classes
 correct_class = results_df['pred_species'].isin(mapped_classes)
 print(f"Predictions in target classes: {correct_class.sum()} / {len(results_df)} ({correct_class.sum()/len(results_df)*100:.1f}%)")
 print()
 
-# Per-class metrics
+# per-class metrics
 precision, recall, f1, support = precision_recall_fscore_support(
     y_true, y_pred, labels=mapped_classes, zero_division=0
 )
 
 print("Per-Class Metrics:")
 print("-" * 80)
-# Create reverse mapping for display
+
+# creating reverse mapping for display
 reverse_mapping = {v: k for k, v in CLASS_MAPPING.items()}
 metrics_df = pd.DataFrame({
     'ResNet Class': mapped_classes,
@@ -263,7 +265,7 @@ metrics_df = pd.DataFrame({
 print(metrics_df.to_string(index=False))
 print()
 
-# Macro and weighted averages
+# macro and weighted averages
 macro_precision, macro_recall, macro_f1, _ = precision_recall_fscore_support(
     y_true, y_pred, labels=mapped_classes, average='macro', zero_division=0
 )
@@ -272,18 +274,18 @@ weighted_precision, weighted_recall, weighted_f1, _ = precision_recall_fscore_su
 )
 
 print("Aggregate Metrics:")
-print(f"  Macro Avg    - Precision: {macro_precision:.4f}, Recall: {macro_recall:.4f}, F1: {macro_f1:.4f}")
-print(f"  Weighted Avg - Precision: {weighted_precision:.4f}, Recall: {weighted_recall:.4f}, F1: {weighted_f1:.4f}")
+print(f"Macro Avg - Precision: {macro_precision:.4f}, Recall: {macro_recall:.4f}, F1: {macro_f1:.4f}")
+print(f"Weighted Avg - Precision: {weighted_precision:.4f}, Recall: {weighted_recall:.4f}, F1: {weighted_f1:.4f}")
 print()
 
-# Confusion Matrix
+# confusion matrix
 cm = confusion_matrix(y_true, y_pred, labels=mapped_classes)
 print("Confusion Matrix:")
 cm_df = pd.DataFrame(cm, index=mapped_classes, columns=mapped_classes)
 print(cm_df)
 print()
 
-# Save metrics
+# saving metrics
 metrics_df.to_csv(os.path.join(OUTPUT_DIR, 'per_class_metrics.csv'), index=False)
 summary_df = pd.DataFrame({
     'Metric': ['Accuracy', 'Macro Precision', 'Macro Recall', 'Macro F1', 
@@ -295,35 +297,35 @@ summary_df = pd.DataFrame({
 })
 summary_df.to_csv(os.path.join(OUTPUT_DIR, 'summary_metrics.csv'), index=False)
 
-# Classification Report
-print("Detailed Classification Report:")
+# classification report
+print("Detailed classification report:")
 print(classification_report(y_true, y_pred, labels=mapped_classes, zero_division=0))
 print()
 
 # ============================================================================
-# STEP 4: Confidence Analysis
+# confidence analysis
 # ============================================================================
 print("=" * 80)
 print("STEP 4: Confidence Score Analysis")
 print("=" * 80)
 
-print(f"Overall Confidence Statistics:")
-print(f"  Mean:   {confidences.mean():.4f}")
-print(f"  Median: {np.median(confidences):.4f}")
-print(f"  Std:    {confidences.std():.4f}")
-print(f"  Min:    {confidences.min():.4f}")
-print(f"  Max:    {confidences.max():.4f}")
+print(f"Overall confidence stats:")
+print(f"Mean: {confidences.mean():.4f}")
+print(f"Median: {np.median(confidences):.4f}")
+print(f"Std: {confidences.std():.4f}")
+print(f"Min: {confidences.min():.4f}")
+print(f"Max: {confidences.max():.4f}")
 print()
 
-# Confidence by correctness
+# conf by correctness
 results_df['correct'] = results_df['true_species_mapped'] == results_df['pred_species']
 correct_conf = results_df[results_df['correct']]['confidence']
 incorrect_conf = results_df[~results_df['correct']]['confidence']
 
 if len(correct_conf) > 0:
-    print(f"Correct Predictions   ({len(correct_conf):4d}): Mean confidence = {correct_conf.mean():.4f}")
+    print(f"Correct Predictions ({len(correct_conf):4d}): Mean confidence = {correct_conf.mean():.4f}")
 else:
-    print(f"Correct Predictions   (   0): No correct predictions")
+    print(f"Correct Predictions (0): No correct predictions")
     
 if len(incorrect_conf) > 0:
     print(f"Incorrect Predictions ({len(incorrect_conf):4d}): Mean confidence = {incorrect_conf.mean():.4f}")
@@ -338,7 +340,7 @@ for bruvs_cls in EVALUABLE_CLASSES:
 print()
 
 # ============================================================================
-# STEP 5: Error Analysis
+# error analysis
 # ============================================================================
 print("=" * 80)
 print("STEP 5: Error Analysis")
@@ -355,20 +357,20 @@ if len(errors) > 0:
     print(error_summary_sorted.to_string(index=False))
     print()
     
-    # Save errors
+    # saving errors
     errors[['image_path', 'true_species_original', 'true_species_mapped', 'pred_species', 'confidence']].to_csv(
         os.path.join(OUTPUT_DIR, 'errors.csv'), index=False
     )
     print(f"✅ Saved error cases to errors.csv\n")
 
 # ============================================================================
-# STEP 6: Visualizations
+# visualisations
 # ============================================================================
 print("=" * 80)
 print("STEP 6: Creating Visualizations")
 print("=" * 80)
 
-# 1. Confusion Matrix
+# confusion matrix
 plt.figure(figsize=(10, 8))
 sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
             xticklabels=mapped_classes, yticklabels=mapped_classes,
@@ -383,11 +385,11 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, 'confusion_matrix.png'), dpi=300, bbox_inches='tight')
 print("✅ Saved confusion_matrix.png")
 
-# 2. Confidence Analysis
+# confidence analysis
 if len(correct_conf) > 0 and len(incorrect_conf) > 0:
     fig, axes = plt.subplots(1, 3, figsize=(15, 4))
     
-    # Histogram
+    # histogram
     axes[0].hist(correct_conf, bins=30, alpha=0.7, label='Correct', color='green', edgecolor='black')
     axes[0].hist(incorrect_conf, bins=30, alpha=0.7, label='Incorrect', color='red', edgecolor='black')
     axes[0].set_xlabel('Confidence Score', fontsize=11)
@@ -396,7 +398,7 @@ if len(correct_conf) > 0 and len(incorrect_conf) > 0:
     axes[0].legend()
     axes[0].grid(alpha=0.3)
     
-    # Boxplot - correctness
+    # boxplot - correctness
     box_data = [correct_conf, incorrect_conf]
     bp = axes[1].boxplot(box_data, labels=['Correct', 'Incorrect'], patch_artist=True)
     bp['boxes'][0].set_facecolor('green')
@@ -407,7 +409,7 @@ if len(correct_conf) > 0 and len(incorrect_conf) > 0:
     axes[1].set_title('Confidence by Correctness', fontsize=12, fontweight='bold')
     axes[1].grid(alpha=0.3)
     
-    # Boxplot - by class
+    # boxplot - by class
     class_conf_data = [results_df[results_df['true_species_original'] == cls]['confidence'] 
                        for cls in EVALUABLE_CLASSES]
     bp2 = axes[2].boxplot(class_conf_data, 
@@ -427,7 +429,7 @@ if len(correct_conf) > 0 and len(incorrect_conf) > 0:
 else:
     print("⚠️  Skipped confidence_analysis.png (no correct predictions or no errors)")
 
-# 3. Per-class Performance
+# per-class performance
 fig, ax = plt.subplots(figsize=(12, 6))
 x = np.arange(len(mapped_classes))
 width = 0.25
@@ -436,7 +438,7 @@ bars1 = ax.bar(x - width, precision, width, label='Precision', alpha=0.8, color=
 bars2 = ax.bar(x, recall, width, label='Recall', alpha=0.8, color='#A23B72')
 bars3 = ax.bar(x + width, f1, width, label='F1-Score', alpha=0.8, color='#F18F01')
 
-# Add value labels and support counts
+# adding value labels and support counts
 for i, (bars, metric_name) in enumerate([(bars1, 'Precision'), (bars2, 'Recall'), (bars3, 'F1')]):
     for bar, supp in zip(bars, support):
         height = bar.get_height()
@@ -452,7 +454,7 @@ ax.legend(fontsize=11)
 ax.set_ylim(0, 1.1)
 ax.grid(axis='y', alpha=0.3)
 
-# Add support counts below x-axis
+# adding support counts below x-axis
 for i, (cls, supp) in enumerate(zip(mapped_classes, support)):
     ax.text(i, -0.15, f'n={int(supp)}', ha='center', fontsize=9, color='gray')
 

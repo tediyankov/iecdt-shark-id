@@ -11,9 +11,9 @@ from pathlib import Path
 from tqdm import tqdm
 
 ## set paths
-CSV_PATH = "./iecdt-shark-id/sharktrack_results/internal_results/output.csv"
+CSV_PATH = "./iecdt-shark-id/sharktrack_results/internal_results/output.csv" # update this path to where your SharkTrack internal results are saved
 VIDEO_DIR = "/gws/nopw/j04/iecdt/shark_bruvs" # update this path to where your videos are stored
-OUTPUT_DIR = "./cropped_sharks"
+OUTPUT_DIR = "./data/cropped_sharks"
 
 # setting higher read attempts for complex video formats
 os.environ['OPENCV_FFMPEG_READ_ATTEMPTS'] = '10000'

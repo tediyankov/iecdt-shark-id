@@ -8,8 +8,8 @@ import os
 from pathlib import Path
 
 ## set paths
-IMAGE_DIR = "./cropped_sharks"
-OUTPUT_CSV = "./labels.csv"
+IMAGE_DIR = "./data/cropped_sharks" # make sure this is wherever your run of SharkTrack saved the images
+OUTPUT_CSV = "./data/labels.csv"
 
 # Species mapping
 SPECIES = {
@@ -83,16 +83,16 @@ def label_images():
                 idx += 1
                 break
             
-            elif key == ord('s'):  # Skip
+            elif key == ord('s'):  # skip
                 idx += 1
                 break
             
-            elif key == ord('b'):  # Back
+            elif key == ord('b'):  # back
                 if idx > 0:
                     idx -= 1
                 break
             
-            elif key == ord('q'):  # Quit
+            elif key == ord('q'):  # quit
                 cv2.destroyAllWindows()
                 save_labels(labels)
                 return

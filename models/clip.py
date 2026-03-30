@@ -24,7 +24,7 @@ from collections import defaultdict
 # config
 # ============================================================================
 
-LABELS_CSV = "./labels.csv"
+LABELS_CSV = "./data/labels.csv"
 BASE_DIR = "."
 
 # output dirs
@@ -261,8 +261,8 @@ def evaluate_and_save(results_df, output_dir, method_name):
     )
     
     print("Aggregate Metrics:")
-    print(f"  Macro Avg    - Precision: {macro_p:.4f}, Recall: {macro_r:.4f}, F1: {macro_f1:.4f}")
-    print(f"  Weighted Avg - Precision: {weighted_p:.4f}, Recall: {weighted_r:.4f}, F1: {weighted_f1:.4f}")
+    print(f"Macro Avg - Precision: {macro_p:.4f}, Recall: {macro_r:.4f}, F1: {macro_f1:.4f}")
+    print(f"Weighted Avg - Precision: {weighted_p:.4f}, Recall: {weighted_r:.4f}, F1: {weighted_f1:.4f}")
     print()
     
     # confusion matrix
@@ -287,9 +287,9 @@ def evaluate_and_save(results_df, output_dir, method_name):
     
     # conf analysis
     print("Confidence Statistics:")
-    print(f"  Mean:   {confidences.mean():.4f}")
-    print(f"  Median: {np.median(confidences):.4f}")
-    print(f"  Std:    {confidences.std():.4f}")
+    print(f"Mean: {confidences.mean():.4f}")
+    print(f"Median: {np.median(confidences):.4f}")
+    print(f"Std: {confidences.std():.4f}")
     print()
     
     results_df['correct'] = results_df['true_species'] == results_df['pred_species']
@@ -297,7 +297,7 @@ def evaluate_and_save(results_df, output_dir, method_name):
     incorrect_conf = results_df[~results_df['correct']]['confidence']
     
     if len(correct_conf) > 0:
-        print(f"Correct predictions   ({len(correct_conf):3d}): Mean confidence = {correct_conf.mean():.4f}")
+        print(f"Correct predictions ({len(correct_conf):3d}): Mean confidence = {correct_conf.mean():.4f}")
     if len(incorrect_conf) > 0:
         print(f"Incorrect predictions ({len(incorrect_conf):3d}): Mean confidence = {incorrect_conf.mean():.4f}")
     print()
@@ -454,14 +454,15 @@ for idx, row in tqdm(test_df.iterrows(), total=len(test_df), desc="Few-shot clas
             image_features = model.encode_image(image)
             image_features /= image_features.norm(dim=-1, keepdim=True)
         
-        # Compute similarity to prototypes
+        # computing similarity to class prototypes
         similarities = {}
         for cls in TARGET_CLASSES:
             if cls in class_prototypes:
                 sim = (image_features @ class_prototypes[cls].T).item()
                 similarities[cls] = sim
             else:
-                similarities[cls] = -1.0  # Penalize missing prototypes
+                # penalising missing prototypes
+                similarities[cls] = -1.0
         
         pred_cls = max(similarities, key=similarities.get)
         confidence = similarities[pred_cls]
@@ -493,6 +494,7 @@ few_metrics = evaluate_and_save(few_shot_df, OUTPUT_DIR_FEW, "CLIP Few-Shot")
 # ============================================================================
 # final compariosn
 # ============================================================================
+
 print("=" * 80)
 print("FINAL COMPARISON: Zero-Shot vs Few-Shot")
 print("=" * 80)
@@ -512,5 +514,5 @@ comparison_df.to_csv(os.path.join(BASE_DIR, 'clip_comparison.csv'), index=False)
 print(f"✅ Comparison saved to clip_comparison.csv")
 print()
 print("=" * 80)
-print("ALL EVALUATIONS COMPLETE!")
+print("all evals complete yay!")
 print("=" * 80)
