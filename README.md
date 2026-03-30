@@ -14,7 +14,7 @@ We found that our DINO model achieved an out-of-sample accuracy of 90.8%, outper
 
 Due to this being an ongoing research project, and due to the sensitive nature of the data due to shark conservation concerns, the raw data for this project is not public yet. The code can be adapted for any input data - feel free to reach out with questions on this topic.
 
-## Hyperparameters
+## Hyperparameters
 
 For the DINO model, we ran a GridSearch to determine that the following hyperparameters maximised performance: 
 
