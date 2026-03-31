@@ -14,6 +14,32 @@ We found that our DINO model achieved an out-of-sample accuracy of 90.8%, outper
 
 Due to this being an ongoing research project, and due to the sensitive nature of the data due to shark conservation concerns, the raw data for this project is not public yet. The code can be adapted for any input data - feel free to reach out with questions on this topic.
 
+## Workflow
+
+1. Clone this repository locally and set it as your current directory.
+2. Inside your current directory (which should be `iecdt-shark-id`) clone the following repositories: 
+- https://github.com/OlgaIsupova/IEarth_CDT_shark_detection/tree/main
+- https://github.com/filippovarini/sharktrack/tree/master
+3. Follow the SharkTrack repository instructions and run the software on your shark videos (ensuring to save the output into `./data/cropped_sharks`).
+4. If you want to label any of your own data, run `python ./data_processing/image_labelling.py` and ensure the labelled CSV is getting saved into `./data`. This will open the first image in your folder. All you have to do to label the image currently on your screen is press one of the following keys: 
+
+```
+=== Shark Species Labeling ===
+Press:
+  1: grey_reef_shark
+  2: blacktip_reef_shark
+  3: whitetip_reef_shark
+  4: tawny_nurse_shark
+  0: unclear/other
+  q: quit
+  s: skip
+  b: go back
+  ESC: save and quit
+========================================
+```
+If you wish to customise the labels, this can be done by editing the `image_labelling.py` script.
+5. Run any of the models from the `models` folder on your data, either as they come or fine-tuned on your newly labelled data.
+
 ## Hyperparameters
 
 For the DINO model, we ran a GridSearch to determine that the following hyperparameters maximised performance: 
@@ -27,7 +53,19 @@ For the DINO model, we ran a GridSearch to determine that the following hyperpar
 
 ## Contents
 
+In the `data_processing` folder you will find:
 
+- `crop_sharks.py`: takes SharkTrack output, and crops shark detection bounding boxes as individual images.
+- `image_labelling.py`: image labelling software script (takes any folder of images as input, and outputs a CSV with image file paths and custom labels)
+- `data_splitting.py`: code for producing the fine-tuning and test label datasets.
+
+In the `models` folder, you will find one script per model (one for ResNet50, one for CLIP, one for the DINOv2 model and one for the tuned version of the DINOv2 model). The scripts train and evaluate the models on the test set (and fine-tune / provide few-shot examples where this is applicable). 
+
+The `results` folder has the saved best models and parameters from the tuning process.
+
+## Tech
+
+This project was executed across three compute environments: a MacBook Pro (Apple M3 Pro) for local development, a JASMIN scientific analysis server (sci-vm-04) for CPU-based processing, and a JASMIN Orchid GPU cluster node (Nvidia A100) for model training, tuning and evaluation.
 
 ## Contact
 
