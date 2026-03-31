@@ -4,17 +4,17 @@ import re
 df = pd.read_csv('./data/finetune_labels_old.csv')
 
 def normalise_path(path):
-    # Match giga_cropped paths
+    # match giga_cropped paths
     m = re.search(r'(giga_cropped/.+)', path)
     if m:
         return './data/' + m.group(1)
     
-    # Match cropped_sharks paths
+    # match cropped_sharks paths
     m = re.search(r'(cropped_sharks/.+)', path)
     if m:
         return './data/' + m.group(1)
     
-    # Match roboflow2 paths
+    # match roboflow2 paths
     m = re.search(r'(roboflow2/.+)', path)
     if m:
         return './data/' + m.group(1)
