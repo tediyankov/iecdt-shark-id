@@ -17,11 +17,17 @@ Due to this being an ongoing research project, and due to the sensitive nature o
 ## Workflow
 
 1. Clone this repository locally and set it as your current directory.
-2. Inside your current directory (which should be `iecdt-shark-id`) clone the following repositories: 
+2. Create a mamba environment using the `shark-environment.yml` file: 
+```
+mamba env create -f shark-environment.yml
+mamba activate shark-env
+```
+
+3. Inside your current directory (which should be `iecdt-shark-id`) clone the following repositories: 
 - https://github.com/OlgaIsupova/IEarth_CDT_shark_detection/tree/main
 - https://github.com/filippovarini/sharktrack/tree/master
-3. Follow the SharkTrack repository instructions and run the software on your shark videos (ensuring to save the output into `./data/cropped_sharks`).
-4. If you want to label any of your own data, run `python ./data_processing/image_labelling.py` and ensure the labelled CSV is getting saved into `./data`. This will open the first image in your folder. All you have to do to label the image currently on your screen is press one of the following keys: 
+4. Follow the SharkTrack repository instructions and run the software on your shark videos (ensuring to save the output into `./data/cropped_sharks`).
+5. If you want to label any of your own data, run `python ./data_processing/image_labelling.py` and ensure the labelled CSV is getting saved into `./data`. This will open the first image in your folder. All you have to do to label the image currently on your screen is press one of the following keys: 
 
 ```
 === Shark Species Labeling ===
@@ -39,7 +45,7 @@ Press:
 ```
 If you wish to customise the labels, this can be done by editing the `image_labelling.py` script.
 
-5. Run any of the models from the `models` folder on your data, either as they come or fine-tuned on your newly labelled data.
+6. Run any of the models from the `models` folder on your data, either as they come or fine-tuned on your newly labelled data.
 
 ## Hyperparameters
 
