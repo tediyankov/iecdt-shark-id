@@ -43,7 +43,7 @@ Press:
   ESC: save and quit
 ========================================
 ```
-If you wish to customise the labels, this can be done by editing the `image_labelling.py` script.
+If you wish to customise the labels, this can be done by editing the image_labelling.py script. Note that this script uses a graphical interface (OpenCV imshow), so it requires a display to be available. If you are running on a remote server (e.g. JASMIN), you will need to either run it with X11 forwarding (ssh -X) or run it locally instead.
 
 6. Run any of the models from the `models` folder on your data, either as they come or fine-tuned on your newly labelled data.
 
