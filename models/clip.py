@@ -20,9 +20,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from collections import defaultdict
 
-# ============================================================================
-# config
-# ============================================================================
+# CONFIG ------------------
 
 LABELS_CSV = "./data/labels.csv"
 BASE_DIR = "."
@@ -40,9 +38,7 @@ TARGET_CLASSES = ['grey_reef_shark', 'blacktip_reef_shark', 'whitetip_reef_shark
 # few-shot param
 FEW_SHOT_K = 10 
 
-# ============================================================================
-# text prompt templates for zero-shot classification
-# ============================================================================
+# TEXT PROMPT TEMPLATE ------------------
 
 # multiple prompt templates for ensemble
 PROMPT_TEMPLATES = [
@@ -77,9 +73,8 @@ SPECIES_VARIATIONS = {
     ]
 }
 
-# ============================================================================
-# loading CLIP model
-# ============================================================================
+## LOADING CLIP MODEL ------------------
+
 print("=" * 80)
 print("CLIP-Based Shark Species Classification")
 print("=" * 80)
@@ -96,9 +91,8 @@ model, preprocess = clip.load("ViT-L/14", device=device)
 print("✅ Model loaded")
 print()
 
-# ============================================================================
-# loading and prepping data
-# ============================================================================
+## LOADING AND PREPPING DATA ------------------
+
 print("=" * 80)
 print("Loading Ground Truth Labels")
 print("=" * 80)
@@ -113,14 +107,13 @@ print(f"Using {len(labels_df)} images for evaluation (4 species)")
 print(f"Class distribution:\n{labels_df['species'].value_counts()}")
 print()
 
-# ============================================================================
-# prepping text embeddings for zero-shot classification
-# ============================================================================
+#PREPPING TEXT EMBEDDINGS ------------------
+
 print("=" * 80)
 print("ZERO-SHOT: Preparing Text Embeddings")
 print("=" * 80)
 
-# Create all text prompts
+# creating all text prompts
 all_prompts = []
 prompt_to_class = {}
 
@@ -158,9 +151,8 @@ for cls in TARGET_CLASSES:
 print("✅ Text embeddings prepared")
 print()
 
-# ============================================================================
-# 0 shot classification
-# ============================================================================
+## ZERO SHOT CLASSIFICATION ------------------
+
 print("=" * 80)
 print("ZERO-SHOT: Classifying Images")
 print("=" * 80)
@@ -216,9 +208,8 @@ print()
 zero_shot_df = pd.DataFrame(zero_shot_results)
 zero_shot_df.to_csv(os.path.join(OUTPUT_DIR_ZERO, 'predictions.csv'), index=False)
 
-# ============================================================================
-# eval 0 shot 
-# ============================================================================
+## EVAL OF ZERO SHOT ------------------
+
 def evaluate_and_save(results_df, output_dir, method_name):
     """Compute metrics and create visualizations"""
     
@@ -366,9 +357,8 @@ def evaluate_and_save(results_df, output_dir, method_name):
 # eval 0 shot
 zero_metrics = evaluate_and_save(zero_shot_df, OUTPUT_DIR_ZERO, "CLIP Zero-Shot")
 
-# ============================================================================
-# few shot classification
-# ============================================================================
+## FEW SHOT CLASSIFICATION ------------------
+
 print("=" * 80)
 print(f"FEW-SHOT: Selecting {FEW_SHOT_K} Support Examples per Class")
 print("=" * 80)
@@ -491,9 +481,7 @@ few_shot_df.to_csv(os.path.join(OUTPUT_DIR_FEW, 'predictions.csv'), index=False)
 # eval few-shot
 few_metrics = evaluate_and_save(few_shot_df, OUTPUT_DIR_FEW, "CLIP Few-Shot")
 
-# ============================================================================
-# final compariosn
-# ============================================================================
+## FINAL COMPARISON ------------------
 
 print("=" * 80)
 print("FINAL COMPARISON: Zero-Shot vs Few-Shot")
