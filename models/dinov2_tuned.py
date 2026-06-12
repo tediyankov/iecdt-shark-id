@@ -1,9 +1,7 @@
 
 ## code to hyperparameter tune the DinoV2 model
 
-# ============================================================================
-# prelims
-# ============================================================================
+## PRELIMS ------------------
 
 import os
 import torch
@@ -29,14 +27,12 @@ import itertools
 import json
 import copy
 
-# ============================================================================
-# config
-# ============================================================================
+## CONFIG ------------------
 
 FINETUNE_CSV = "./data/finetune_labels.csv"
 TEST_CSV = "./data/test_labels.csv"
 BASE_DIR = "."
-EXTERNAL_BASE_DIR = "/gws/nopw/j04/iecdt/shark_bruvs/roboflow2" # change this if using an external labelled image database
+EXTERNAL_BASE_DIR = "/gws/nopw/j04/iecdt/shark_bruvs/roboflow2" 
 
 OUTPUT_DIR = "./results/dinov2_tuned"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -50,9 +46,7 @@ TARGET_CLASSES = ['grey_reef_shark', 'blacktip_reef_shark', 'whitetip_reef_shark
 CLASS_TO_IDX = {cls: idx for idx, cls in enumerate(TARGET_CLASSES)}
 IDX_TO_CLASS = {idx: cls for cls, idx in CLASS_TO_IDX.items()}
 
-# ============================================================================
-# hyperparameter tuning setup
-# ============================================================================
+## HYPERPARAMETER TUNING SET UP ------------------
 
 HYPERPARAM_GRID = {
     'learning_rate': [0.0001, 0.0005, 0.001], 
@@ -80,9 +74,7 @@ total_combinations = np.prod([len(v) for v in HYPERPARAM_GRID.values()])
 print(f"\nTotal combinations: {total_combinations}")
 print()
 
-# ============================================================================
-# custom dataset class
-# ============================================================================
+## CUSTOM DATASET CLASS ------------------
 
 class SharkDataset(Dataset):
     def __init__(self, csv_path, base_dir, external_base_dir, transform=None, indices=None):
@@ -116,9 +108,7 @@ class SharkDataset(Dataset):
         label = CLASS_TO_IDX[row['species']]
         return image, label, row['image_path']
 
-# ============================================================================
-# data transforms
-# ============================================================================
+## DATA TRANSFORMS ------------------
 
 train_transform = transforms.Compose([
     transforms.Resize(256),
@@ -138,9 +128,7 @@ val_transform = transforms.Compose([
                         std=[0.229, 0.224, 0.225])
 ])
 
-# ============================================================================
-# loading and splitting data
-# ============================================================================
+## LOADING AND SPLITTING DATA ------------------
 
 print("=" * 80)
 print("Loading and Splitting Data")
@@ -170,9 +158,7 @@ test_dataset = SharkDataset(TEST_CSV, BASE_DIR, EXTERNAL_BASE_DIR, transform=val
 print(f"Test dataset: {len(test_dataset)} samples")
 print()
 
-# ============================================================================
-# loading dinoV2 backbone
-# ============================================================================
+## LOADING DINOV2 BACKBONE ------------------
 
 print("=" * 80)
 print("Loading DINOv2 Backbone")
@@ -196,9 +182,7 @@ with torch.no_grad():
 print(f"Embedding dimension: {embedding_dim}")
 print()
 
-# ============================================================================
-# loading pretrained weights
-# ============================================================================
+## LOADING PRETRAINED WEIGHTS ------------------
 
 print("=" * 80)
 print("Loading Pretrained Weights")
@@ -208,9 +192,7 @@ pretrained_state_dict = torch.load(PRETRAINED_MODEL, map_location=DEVICE)
 print(f"✅ Loaded pretrained weights from {PRETRAINED_MODEL}")
 print()
 
-# ============================================================================
-# custom class for linear probe
-# ============================================================================
+## CUSTOM CLASS FOR LINEAR PROBE ------------------
 
 class LinearProbe(nn.Module):
     def __init__(self, input_dim, num_classes, hidden_dim=256, dropout=0.3):
@@ -225,9 +207,7 @@ class LinearProbe(nn.Module):
     def forward(self, x):
         return self.classifier(x)
 
-# ============================================================================
-# training function with warm start
-# ============================================================================
+## TRAINING FUNCTION WITH WARM START ------------------
 
 def train_model(hyperparams, train_loader, val_loader, pretrained_weights, 
                 max_epochs=30, patience=7):
@@ -341,9 +321,7 @@ def train_model(hyperparams, train_loader, val_loader, pretrained_weights,
     }
 
 
-# ============================================================================
-# grid search
-# ============================================================================
+##B GRID SEARCH ------------------
 
 print("=" * 80)
 print("Running Grid Search (Warm Start)")
@@ -457,9 +435,7 @@ plt.savefig(os.path.join(OUTPUT_DIR, 'gridsearch_visualization.png'), dpi=300, b
 print("✅ Saved gridsearch_visualization.png")
 print()
 
-# ============================================================================
-# evaluating best model on test set
-# ===========================================================================
+## EVAL MODEL ON TEST ------------------
 
 print("=" * 80)
 print("Evaluating Best Model on Test Set")
@@ -502,9 +478,8 @@ all_preds = np.array(all_preds)
 all_probs = np.array(all_probs)
 all_features = np.array(all_features)
 
-# ============================================================================
-# computing metrics
-# ============================================================================
+## COMPUTING METRICS ------------------
+
 print()
 print("=" * 80)
 print("Test Set Metrics")
