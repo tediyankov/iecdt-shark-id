@@ -23,9 +23,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# ============================================================================
-# config
-# ============================================================================
+## CONFIG ------------------
 
 # data paths
 FINETUNE_CSV = "./data/finetuning_data/finetune_labels.csv"
@@ -56,9 +54,8 @@ if torch.cuda.is_available():
     print(f"GPU: {torch.cuda.get_device_name(0)}")
 print()
 
-# ============================================================================
-# custom dataset class
-# ============================================================================
+## CUSTOM DATASET CLASS ------------------
+
 class SharkDataset(Dataset):
     def __init__(self, csv_path, base_dir, external_base_dir, transform=None):
         self.df = pd.read_csv(csv_path)
@@ -91,9 +88,7 @@ class SharkDataset(Dataset):
         
         return image, label, row['image_path']
 
-# ============================================================================
-# data transforms
-# ============================================================================
+## DATA TRANSFORMS ------------------
 
 # DINOv2 uses standard ImageNet normalisation
 train_transform = transforms.Compose([
@@ -113,9 +108,8 @@ test_transform = transforms.Compose([
                         std=[0.229, 0.224, 0.225])
 ])
 
-# ============================================================================
-# loading dataset
-# ============================================================================
+## LOADING DATASET ------------------
+
 print("=" * 80)
 print("Loading Datasets")
 print("=" * 80)
@@ -141,9 +135,8 @@ print()
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
-# ============================================================================
-# loading DinoV2 model
-# ============================================================================
+## LOADING DINOV2 MODEL ------------------
+
 print("=" * 80)
 print("Loading DINOv2 Model")
 print("=" * 80)
@@ -171,9 +164,7 @@ with torch.no_grad():
 print(f"Embedding dimension: {embedding_dim}")
 print()
 
-# ============================================================================
-# linear probe / classifier head
-# ============================================================================
+## LINEAR PROBE / CLASSIFIER HEAD ------------------
 
 class LinearProbe(nn.Module):
     def __init__(self, input_dim, num_classes):
@@ -187,17 +178,14 @@ linear_probe = LinearProbe(embedding_dim, len(TARGET_CLASSES)).to(DEVICE)
 print(f"Linear probe: {embedding_dim} → {len(TARGET_CLASSES)} classes")
 print()
 
-# ============================================================================
-# training setup
-# ============================================================================
+## TRAINING SETUP ------------------
 
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(linear_probe.parameters(), lr=LEARNING_RATE)
 scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=5, verbose=True)
 
-# ============================================================================
-# training loop
-# ============================================================================
+## LOOP ------------------
+
 print("=" * 80)
 print("Training Linear Probe")
 print("=" * 80)
@@ -278,9 +266,7 @@ plt.tight_layout()
 plt.savefig(os.path.join(OUTPUT_DIR, 'training_curves.png'), dpi=300, bbox_inches='tight')
 print("✅ Saved training_curves.png\n")
 
-# ============================================================================
-# eval
-# ============================================================================
+## EVAL ------------------
 
 print("=" * 80)
 print("Evaluating on Test Set")
@@ -322,9 +308,8 @@ all_preds = np.array(all_preds)
 all_probs = np.array(all_probs)
 all_features = np.array(all_features)
 
-# ============================================================================
-# computing metrics
-# ============================================================================
+## COMPUTING METRICS ------------------
+
 print("=" * 80)
 print("Computing Metrics")
 print("=" * 80)
@@ -402,9 +387,7 @@ predictions_df = pd.DataFrame({
 })
 predictions_df.to_csv(os.path.join(OUTPUT_DIR, 'predictions.csv'), index=False)
 
-# ============================================================================
-# confidence score analysis
-# ============================================================================
+## CONFIDENCE SCORE ANALYSIS ------------------
 
 print("=" * 80)
 print("Confidence Score Analysis")
@@ -427,9 +410,7 @@ print(f"Correct predictions   ({len(correct_conf):4d}): Mean = {correct_conf.mea
 print(f"Incorrect predictions ({len(incorrect_conf):4d}): Mean = {incorrect_conf.mean():.4f}")
 print()
 
-# ============================================================================
-# feature quality analysis
-# ============================================================================
+## FEATURE QUALITY ANALKYSIS ------------------
 
 print("=" * 80)
 print("Feature Quality Analysis (Intra-class vs Inter-class Distance)")
@@ -475,9 +456,7 @@ print(f"Separation Ratio (inter/intra): {separation_ratio:.4f}")
 print(f"(Higher is better - want inter > intra)")
 print()
 
-# ============================================================================
-# t-SNE visualisation
-# ============================================================================
+## TSNE VIZ ------------------
 
 print("=" * 80)
 print("Creating t-SNE Visualization")
@@ -505,9 +484,7 @@ embeddings_2d = tsne.fit_transform(tsne_features)
 print("✅ t-SNE complete")
 print()
 
-# ============================================================================
-# visualisations
-# ============================================================================
+## OTHER VIZ ------------------
 
 print("=" * 80)
 print("Creating Visualizations")
