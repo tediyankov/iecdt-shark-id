@@ -19,9 +19,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-# ============================================================================
-# config 
-# ============================================================================
+## CONFIG ------------------
+
 RESNET_CKPT = "./IEarth_CDT_shark_detection/best.pth"
 LABEL_MAP = "./IEarth_CDT_shark_detection/label_map.json"
 
@@ -33,9 +32,7 @@ BASE_DIR = "."
 OUTPUT_DIR = "./results/resnet"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-# ============================================================================
-# class mapping
-# ============================================================================
+## CLASS MAPPING ------------------
 
 # mapping BRUVS labels to ResNet classes
 CLASS_MAPPING = {
@@ -49,9 +46,7 @@ CLASS_MAPPING = {
 # classes that can be evaluated (have a mapping)
 EVALUABLE_CLASSES = list(CLASS_MAPPING.keys())
 
-# ============================================================================
-# setup of model
-# ============================================================================
+## MODEL SET UP ------------------
 
 def get_model(arch, num_classes):
     if arch == "resnet50":
@@ -125,9 +120,8 @@ model.eval()
 
 transform = build_transform(224)
 
-# ============================================================================
-# loading test set and filter to evaluate classes
-# ============================================================================
+## LOADING TEST SET ------------------
+
 print("=" * 80)
 print("STEP 1: loading test set")
 print("=" * 80)
@@ -156,9 +150,8 @@ if len(test_df) == 0:
     print("ERROR: No evaluable samples after filtering!")
     exit(1)
 
-# ============================================================================
-# classifying images
-# ============================================================================
+## CLASSIFYING IMAGES ------------------
+
 print("=" * 80)
 print("STEP 2: running ResNet50 classification")
 print("=" * 80)
@@ -213,9 +206,8 @@ print()
 results_df = pd.DataFrame(results)
 results_df.to_csv(os.path.join(OUTPUT_DIR, 'predictions.csv'), index=False)
 
-# ============================================================================
-# computing metrics using mapped classes
-# ============================================================================
+## COMPUTING METRICS USING MAPPED CLASS ------------------
+
 print("=" * 80)
 print("STEP 3: computing eval metrics")
 print("=" * 80)
@@ -302,9 +294,8 @@ print("Detailed classification report:")
 print(classification_report(y_true, y_pred, labels=mapped_classes, zero_division=0))
 print()
 
-# ============================================================================
-# confidence analysis
-# ============================================================================
+## CONFIDENCE ANALYSIS ------------------ 
+
 print("=" * 80)
 print("STEP 4: Confidence Score Analysis")
 print("=" * 80)
@@ -331,7 +322,7 @@ if len(incorrect_conf) > 0:
     print(f"Incorrect Predictions ({len(incorrect_conf):4d}): Mean confidence = {incorrect_conf.mean():.4f}")
 print()
 
-# Confidence by class
+# confidence by class
 print("Confidence by True Class (BRUVS labels):")
 for bruvs_cls in EVALUABLE_CLASSES:
     cls_conf = results_df[results_df['true_species_original'] == bruvs_cls]['confidence']
@@ -339,9 +330,8 @@ for bruvs_cls in EVALUABLE_CLASSES:
         print(f"  {bruvs_cls:25s}: Mean = {cls_conf.mean():.4f}, Std = {cls_conf.std():.4f}, n={len(cls_conf)}")
 print()
 
-# ============================================================================
-# error analysis
-# ============================================================================
+## ERROR ANALYSIS ------------------
+
 print("=" * 80)
 print("STEP 5: Error Analysis")
 print("=" * 80)
@@ -363,9 +353,8 @@ if len(errors) > 0:
     )
     print(f"✅ Saved error cases to errors.csv\n")
 
-# ============================================================================
-# visualisations
-# ============================================================================
+## VIZ ------------------
+
 print("=" * 80)
 print("STEP 6: Creating Visualizations")
 print("=" * 80)
