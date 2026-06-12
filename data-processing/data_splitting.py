@@ -6,9 +6,7 @@ import os
 import shutil
 from pathlib import Path
 
-# ============================================================================
-# config
-# ============================================================================
+## CONFIG
 
 # input files
 TEST_SET_CSV = "./data/labels.csv"
@@ -36,9 +34,7 @@ FINETUNE_SAMPLES = {
     'tawny_nurse_shark': {'my_data': 100, 'external': 100}
 }
 
-# ============================================================================
-# loading datasets
-# ============================================================================
+## LOADING DATASETS
 
 print("=" * 80)
 print("Creating Fine-tuning and Test Splits")
@@ -55,9 +51,8 @@ print(f"My data distribution:\n{my_data['species'].value_counts()}\n")
 print(f"External data: {len(external_data)} images")
 print(f"External data distribution:\n{external_data['species'].value_counts()}\n")
 
-# ============================================================================
-# creating fine tuning dataset
-# ============================================================================
+## CREATING FINE TUNING DATADSET
+
 print("=" * 80)
 print("STEP 2: Creating Fine-tuning Dataset")
 print("=" * 80)
@@ -115,9 +110,7 @@ print(f"Distribution by class:\n{finetune_df['species'].value_counts()}")
 print(f"Distribution by source:\n{finetune_df['source'].value_counts()}")
 print()
 
-# ============================================================================
-# creating test dataset (my data minus fine-tuning samples)
-# ============================================================================
+## CREATING TEST DATASET
 
 print("=" * 80)
 print("STEP 3: Creating Test Dataset")
@@ -133,9 +126,7 @@ print(f"  Total samples: {len(test_df)}")
 print(f"  Distribution by class:\n{test_df['species'].value_counts()}")
 print()
 
-# ============================================================================
-# saving CSV files
-# ============================================================================
+## SAVING CSV
 
 print("=" * 80)
 print("STEP 4: Saving Dataset Metadata")
@@ -179,9 +170,8 @@ print("\nSplit Summary:")
 print(summary_df.to_string(index=False))
 print()
 
-# ============================================================================
-# copying images to organised directories
-# ============================================================================
+## COPYING IMAGES TO ORGANISED DIRS
+
 print("=" * 80)
 print("STEP 5: Copying Images (Optional)")
 print("=" * 80)
@@ -243,9 +233,8 @@ else:
     print("Skipping image copying. Only CSV files created.")
     print()
 
-# ============================================================================
-# generating a final summary
-# ============================================================================
+## GENERATING FINAL SUMMARY
+
 print("=" * 80)
 print("DATASET CREATION COMPLETE")
 print("=" * 80)
